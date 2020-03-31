@@ -287,11 +287,11 @@ void Computation::setPVals(int index, Node *node) const
         if (activeArmy == Chess::Black)
             mv.mirror(); // nn index expects the board to be flipped
 #if !defined(USE_UNIFORM_BACKEND)
-        const float p = fastpow(m_computation->GetPVal(index, moveToNNIndex(mv)), SearchSettings::policySoftmaxTemp);
+        const float p = fastpow(m_computation->GetPVal(index, moveToNNIndex(mv)), 1 / SearchSettings::policySoftmaxTemp);
 #else
         float fakePolicy = 1.0f;
         moveToNNIndex(mv);
-        const float p = fastpow(fakePolicy, SearchSettings::policySoftmaxTemp);
+        const float p = fastpow(fakePolicy, 1 / SearchSettings::policySoftmaxTemp);
 #endif
         total += p;
         const_cast<Node::Potential*>(potential)->setPValue(p);

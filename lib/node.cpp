@@ -267,6 +267,27 @@ void Node::incrementVisited()
     m_uCoeff = (SearchSettings::cpuctInit + growth) * float(qSqrt(N));
     m_virtualLoss = 0;
     m_isDirty = false;
+
+
+    float thisPolicyTemp = SearchSettings::policySoftmaxTemp - SearchSettings::policyTempDecay * fastlog2(m_visited);
+    float thisExponent = m_lastPolicyTemp / thisPolicyTemp;
+
+    if (abs(thisExponent - 1.0f) > 0.002f) {
+        // Update policies by temperature
+        float total = 0.0f;
+        for (Node *child : m_children) {
+            float newValue = fastpow(child->pValue(), thisExponent);
+            child->setPValue(newValue);
+            total += newValue;
+        }
+
+        for (Node *child : m_children) {
+            child->setPValue(child->pValue() / total);
+        }
+
+        m_lastPolicyTemp = thisPolicyTemp;
+    }
+
 }
 
 void Node::backPropagateValue(float v)

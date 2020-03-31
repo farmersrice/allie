@@ -27,6 +27,7 @@
 #include <QMutex>
 
 #include "fastapprox/fastlog.h"
+#include "fastapprox/fastpow.h"
 #include "game.h"
 #include "move.h"
 #include "notation.h"
@@ -296,6 +297,7 @@ private:
     float m_rawQValue;                  // 4
     float m_pValue;                     // 4
     float m_policySum;                  // 4
+    float m_lastPolicyTemp;             // 4
     float m_uCoeff;                     // 4
     quint8 m_potentialIndex;            // 2
     bool m_isExact: 1;                  // 1
