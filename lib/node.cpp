@@ -172,6 +172,7 @@ void Node::initialize(Node *parent, const Game &game, Node::Position *position)
     m_rawQValue = -2.0f;
     m_pValue = -2.0f;
     m_policySum = 0;
+    m_lastPolicyTemp = SearchSettings::policySoftmaxTemp;
     m_uCoeff = -2.0f;
     m_isExact = false;
     m_isTB = false;
