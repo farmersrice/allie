@@ -171,7 +171,9 @@ void Node::initialize(Node *parent, const Game &game, Node::Position *position)
     m_qValue = -2.0f;
     m_rawQValue = -2.0f;
     m_pValue = -2.0f;
-    m_policySum = 0;
+    m_policySum = 0.0f;
+    m_policySumAll = 1.0f;
+    m_lastPolicyTemp = SearchSettings::policySoftmaxTemp;
     m_uCoeff = -2.0f;
     m_isExact = false;
     m_isTB = false;
@@ -281,11 +283,17 @@ void Node::incrementVisited()
             total += newValue;
         }
 
+        for (int i = m_potentialIndex; i < m_position->m_potentials.count(); ++i) {
+            Node::Potential *potential = &m_position->m_potentials[i];
+            total += fastpow(potential->pValue(), SearchSettings::policySoftmaxTemp / thisPolicyTemp);
+        }
+
         for (Node *child : m_children) {
             child->setPValue(child->pValue() / total);
         }
 
         m_lastPolicyTemp = thisPolicyTemp;
+        m_policySumAll = total;
     }
 
 }
@@ -802,7 +810,8 @@ Node *Node::generateNextChild(Cache *cache, NodeGenerationError *error)
 {
     Q_ASSERT(hasPotentials());
     Node::Potential potential = m_position->m_potentials.at(m_potentialIndex);
-    Node *child = Node::generateNode(potential.move(), potential.pValue(), this, cache, error);
+    Node *child = Node::generateNode(potential.move(), fastpow(potential.pValue(), SearchSettings::policySoftmaxTemp / m_lastPolicyTemp) / m_policySumAll, this, cache, error);
+    //Node *child = Node::generateNode(potential.move(), potential.pValue(), this, cache, error);
     if (!child)
         return nullptr;
     ++m_potentialIndex;

@@ -297,6 +297,7 @@ private:
     float m_rawQValue;                  // 4
     float m_pValue;                     // 4
     float m_policySum;                  // 4
+    float m_policySumAll;               // 4
     float m_lastPolicyTemp;             // 4
     float m_uCoeff;                     // 4
     quint8 m_potentialIndex;            // 2
