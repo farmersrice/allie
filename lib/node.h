@@ -82,19 +82,16 @@ public:
         Playout()
             : m_potential(nullptr)
             , m_isPotential(true)
-            , m_parent(nullptr)
         { }
 
-        Playout(Node *node, Node *parent)
+        Playout(Node *node)
             : m_node(node)
             , m_isPotential(false)
-            , m_parent(parent)
         { }
 
-        Playout(Potential *potential, Node *parent)
+        Playout(Potential *potential)
             : m_potential(potential)
             , m_isPotential(true)
-            , m_parent(parent)
         { }
 
         inline bool isNull() const { return m_isPotential && !m_potential; }
@@ -127,9 +124,7 @@ public:
 
         inline float uValue(float uCoeff) const
         {
-            return uCoeff * fastpow(pValue(), SearchSettings::policySoftmaxTemp / (SearchSettings::policySoftmaxTemp - 
-                SearchSettings::policyTempDecay * fastlog2(1 + m_parent->m_visited)))
-                 / (m_parent->m_policySumWithPotentials * (visits() + virtualLoss() + 1));
+            return uCoeff * pValue() / (visits() + virtualLoss() + 1);
         }
 
         inline quint32 visits() const
@@ -151,7 +146,6 @@ public:
             Node *m_node;
             Potential *m_potential;
         };
-        Node *m_parent;
         bool m_isPotential : 1;
     };
 
@@ -303,7 +297,7 @@ private:
     float m_rawQValue;                  // 4
     float m_pValue;                     // 4
     float m_policySum;                  // 4
-    float m_policySumWithPotentials;    // 4
+    float m_lastPolicyTemp;             // 4
     float m_uCoeff;                     // 4
     quint8 m_potentialIndex;            // 2
     bool m_isExact: 1;                  // 1
@@ -521,9 +515,7 @@ inline void Node::setPValue(float pValue)
 
 inline float Node::uValue(const float uCoeff) const
 {
-    return uCoeff * fastpow(pValue(), SearchSettings::policySoftmaxTemp / (SearchSettings::policySoftmaxTemp - 
-        SearchSettings::policyTempDecay * fastlog2(1 + m_parent->m_visited)))
-         / (m_parent->m_policySumWithPotentials * (visits() + virtualLoss() + 1));
+    return uCoeff * pValue() / (visits() + virtualLoss() + 1);
 }
 
 inline float Node::uctFormula(float qValue, float uValue, quint64 visits)
