@@ -171,8 +171,7 @@ void Node::initialize(Node *parent, const Game &game, Node::Position *position)
     m_qValue = -2.0f;
     m_rawQValue = -2.0f;
     m_pValue = -2.0f;
-    m_policySum = 0.0f;
-    m_policySumWithPotentials = 0.0f;
+    m_policySum = 0;
     m_uCoeff = -2.0f;
     m_isExact = false;
     m_isTB = false;
@@ -270,22 +269,23 @@ void Node::incrementVisited()
     m_isDirty = false;
 
 
-    // very inefficient, think about changing it later
+    float thisPolicyTemp = SearchSettings::policySoftmaxTemp - SearchSettings::policyTempDecay * fastlog2(m_visited);
+    float thisExponent = m_lastPolicyTemp / thisPolicyTemp;
 
-    float thisExponent = SearchSettings::policySoftmaxTemp / (SearchSettings::policySoftmaxTemp - SearchSettings::policyTempDecay * fastlog2(1 + m_visited));
-    m_policySum = 0.0f;
-    m_policySumWithPotentials = 0.0f;
+    if (abs(thisExponent - 1.0f) > 0.002f) {
+        // Update policies by temperature
+        float total = 0.0f;
+        for (Node *child : m_children) {
+            float newValue = fastpow(child->pValue(), thisExponent);
+            child->setPValue(newValue);
+            total += newValue;
+        }
 
-    for (Node *child : m_children) {
-        float newValue = fastpow(child->pValue(), thisExponent);
-        m_policySum += newValue;
-        m_policySumWithPotentials += newValue;
-    }
+        for (Node *child : m_children) {
+            child->setPValue(child->pValue() / total);
+        }
 
-    for (int i = m_potentialIndex; i < m_position->m_potentials.count(); ++i) {
-        Node::Potential *potential = &m_position->m_potentials[i];
-
-        m_policySumWithPotentials += fastpow(potential->pValue(), thisExponent);
+        m_lastPolicyTemp = thisPolicyTemp;
     }
 
 }
@@ -586,7 +586,7 @@ start_playout:
         // First look at the actual children
         for (int i = 0; i < n->m_children.count(); ++i) {
             Node *child = n->m_children.at(i);
-            Node::Playout playout(child, n);
+            Node::Playout playout(child);
             float score = Node::uctFormula(playout.qValue(parentQValueDefault), playout.uValue(uCoeff), playout.visits() + playout.virtualLoss());
             Q_ASSERT(score > -std::numeric_limits<float>::max());
             if (score > bestScore) {
@@ -606,7 +606,7 @@ start_playout:
         for (int i = n->m_potentialIndex; i < n->m_position->m_potentials.count() && i < n->m_potentialIndex + 2; ++i) {
             // We get a non-const reference to the actual value
             Node::Potential *potential = &n->m_position->m_potentials[i];
-            Node::Playout playout(potential, n);
+            Node::Playout playout(potential);
             float score = Node::uctFormula(playout.qValue(parentQValueDefault), playout.uValue(uCoeff), playout.visits() + playout.virtualLoss());
             Q_ASSERT(score > -std::numeric_limits<float>::max());
             if (score > bestScore) {
